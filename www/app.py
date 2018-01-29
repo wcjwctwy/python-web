@@ -1,27 +1,47 @@
-import logging;
+import logging
+
+from flask import Flask, request, render_template, redirect, url_for
+from www import reg_opt
 
 logging.basicConfig(level=logging.INFO)
 
-import asyncio, os, json, time
-from datetime import datetime
-
-from aiohttp import web
+app = Flask(__name__)
 
 
-def index(request):
-    return web.Response(content_type='text/html', body=b'<h1>Python webapp</h1>')
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    return render_template('index.html')
 
 
-async def init(loop):
-    app = web.Application(loop=loop)
-    app.router.add_route('GET', '/', index)
-    srv = await loop.create_server(app.make_handler(), '127.0.0.1', 9000)
-    logging.info('[服务启动成功：]127.0.0.1：9000')
-    return srv
+@app.route('/user/<name>')
+def find(name):
+    return 'Hello %s' % name
 
 
-loop = asyncio.get_event_loop()
+@app.route('/register', methods=['GET'])
+def register():
+    return render_template('register.html')
 
-loop.run_until_complete(init(loop))
 
-loop.run_forever()
+@app.route('/register', methods=['POST'])
+def do_register():
+    reg_opt.do_reg(request)
+    return redirect(url_for('login'))
+
+
+@app.route('/login', methods=['GET'])
+def login():
+    return render_template('login.html')
+
+
+@app.route('/login', methods=['POST'])
+def do_login():
+    result = reg_opt.do_login(request)
+    if result == 'failed':
+        return render_template('login.html', message='用户名密码错误！！')
+    else:
+        return render_template('index.html', name=result)
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
